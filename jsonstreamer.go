@@ -31,7 +31,7 @@ func NewJSONStreamer(kinesisClient *kinesis.Kinesis, streamName string, hostID s
 }
 
 // HandleData reads lines of data and streams the result to Kinesis, re-formatted as JSON.
-func (js *JSONStreamer) HandleData(reader io.Reader) error {
+func (js *JSONStreamer) HandleData(reader io.Reader, outputFormat string, outputKey string, additionalEntries map[string]string) error {
 	var err error
 	recordsChan := make(chan kinesis.PutRecordsRequestEntry, 5)
 	doneChan := make(chan bool, 1)
@@ -46,6 +46,15 @@ func (js *JSONStreamer) HandleData(reader io.Reader) error {
 		}
 
 		if value != nil {
+			if outputFormat == "json" {
+				if valueMap, castOk := value.(map[string]interface{}); castOk {
+					// Add additional entries to the map
+					for key, value := range additionalEntries {
+						valueMap[key] = value
+					}
+				}
+			}
+
 			jsonData, err := json.Marshal(value)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Unable to re-JSON encode a record: %v\n", value)

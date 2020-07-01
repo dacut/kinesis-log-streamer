@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -29,12 +30,19 @@ func NewLineStreamer(kinesisClient *kinesis.Kinesis, streamName string, hostID s
 }
 
 // HandleData reads lines of data and streams the result to Kinesis, formatted as JSON.
-func (ls *LineStreamer) HandleData(reader io.Reader) error {
+func (ls *LineStreamer) HandleData(reader io.Reader, outputFormat string, outputKey string, additionalEntries map[string]string) error {
 	buffer := make([]byte, 65536, 65536)
 	var err error
 
 	recordsChan := make(chan kinesis.PutRecordsRequestEntry, 5)
 	doneChan := make(chan bool, 1)
+	lineMapping := make(map[string]string)
+
+	if outputFormat == "json" {
+		for key, value := range additionalEntries {
+			lineMapping[key] = value
+		}
+	}
 
 	go ls.StreamToKinesis(recordsChan, doneChan)
 
@@ -76,8 +84,21 @@ func (ls *LineStreamer) HandleData(reader io.Reader) error {
 			bufValid = bufValid[lfPos+1:]
 
 			if len(line) > 0 {
+				var data []byte
+
+				if outputFormat == "string" {
+					data = line
+				} else {
+					lineMapping[outputKey] = string(line)
+					data, err = json.Marshal(lineMapping)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Failed to JSON serialize an output mapping: %v\n", err)
+						fmt.Fprintf(os.Stderr, "Mapping that caused the error: %v\n", lineMapping)
+						continue
+					}
+				}
 				requestEntry := kinesis.PutRecordsRequestEntry{
-					Data:         line,
+					Data:         data,
 					PartitionKey: aws.String(ls.HostID),
 				}
 				recordsChan <- requestEntry
