@@ -1,0 +1,38 @@
+version: "2.4"
+services:
+  apache:
+    depends_on:
+      - ecs-local-endpoints
+    build:
+      context: ../..
+      dockerfile: functest/apachelogs/apache.dockerfile
+      args:
+        VERSION: 0.2.0-0
+    command: ["/usr/sbin/httpd", "-DFOREGROUND"]
+    networks:
+      ecs:
+        ipv4_address: "169.254.170.3"
+    ports:
+      - 8080:80
+    environment:
+      AWS_DEFAULT_REGION: us-west-2
+      AWS_REGION: us-west-2
+      AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: /creds
+  ecs-local-endpoints:
+    image: amazon/amazon-ecs-local-container-endpoints
+    volumes:
+      - /var/run:/var/run
+      - $HOME/.aws/:/home/.aws/
+    environment:
+      HOME: /home
+      AWS_PROFILE: iono
+    networks:
+      ecs:
+        ipv4_address: "169.254.170.2"
+networks:
+  ecs:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "169.254.170.0/24"
+          gateway: 169.254.170.1
