@@ -14,7 +14,12 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# Docker export directory
 export/
 
-# Generated binary
+# Visual Studio Code
+.vscode/
+
+# Generated binaries
 kinesis-log-streamer
+kinesis-log-streamer-*.zip
