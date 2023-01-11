@@ -1,8 +1,10 @@
 module github.com/dacut/kinesis-log-streamer
 
-go 1.14
+go 1.18
+
+require github.com/aws/aws-sdk-go v1.44.177
 
 require (
-	github.com/aws/aws-sdk-go v1.32.13
-	github.com/pborman/getopt v0.0.0-20190409184431-ee0cd42419d3
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/pborman/getopt/v2 v2.1.0
 )
